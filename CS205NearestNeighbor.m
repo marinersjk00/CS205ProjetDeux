@@ -1,7 +1,19 @@
 function maxAcc = jkProject2()
-    data = load("/MATLAB Drive/Projects/Feature Selection/CS170_Large_Data__43.txt");
+    data = load("/MATLAB Drive/Projects/Feature Selection/CS170_large_Data__5.txt");
     fprintf("Welcome to Jordan Kuschner's Feature Selector\n\n");
-    x = input("Please enter 1 for forward selection or 2 for backwards elimination");
+   
+
+     
+    %shuffledData = data(randperm(size(data, 1)), :);
+% mnew = m(k(1:1000),:);
+    sampleSize = size(data, 1);
+   % fprintf("Size before sampling = %d\n", size(data,1));
+   index = randsample(1:length(data), sampleSize);
+    data = data(index,:);
+    %    fprintf("Size after sampling = %d\n", size(data,1));
+
+         x = input("Please enter 1 for forward selection or 2 for backwards elimination");
+    maxMisses = 2000000;
 
     maxAcc = 0;
     featureSet = [];
@@ -45,7 +57,7 @@ function maxAcc = jkProject2()
                  if isempty(intersect(currentSet, k))
                      disp(["-->Considering adding ", int2str(k), "th feature..."]);
                  
-                     accuracy = leaveOneOut(data, currentSet, k) 
+                     accuracy = leaveOneOut(data, currentSet, k, maxAcc) 
         
                     if accuracy > bestAccSoFar
                         bestAccSoFar = accuracy;
@@ -85,7 +97,7 @@ function maxAcc = jkProject2()
                 if ~isempty(intersect(currentSet, k))
                      disp(["-->Considering removing ", int2str(k), "th feature..."]);
                      
-                     accuracy = removeElement(data, currentSet, k);
+                     accuracy = removeElement(data, currentSet, k, maxAcc);
                      disp(accuracy);
         
                     if accuracy > bestAccSoFar
@@ -115,13 +127,14 @@ function maxAcc = jkProject2()
  end
 
     
-    function accuracy = leaveOneOut(data, currentSet, featureToAdd)
+    function accuracy = leaveOneOut(data, currentSet, featureToAdd, bestAccSoFar)
     for i = 2 : size(data, 2)
         if isempty(intersect(currentSet, i-1)) && i-1 ~= featureToAdd
                data(:, i) = 0;
         end
     end
     numCorrect = 0;
+    numWrong = 0;
     for i = 1 : size(data, 1)
         testObj = data(i, 2:end);
         testLabel = data(i, 1);
@@ -144,20 +157,32 @@ function maxAcc = jkProject2()
     
         if testLabel == nearestNeighborLabel
             numCorrect = numCorrect + 1;
-    
+        else
+            numWrong = numWrong + 1;
+        end
+
+        if(numWrong >= maxMisses)
+            accuracy = bestAccSoFar;
+            fprintf("Abandoning feature test\n")
+            return;
         end
     
     end
+        maxMisses = numWrong;
+        fprintf("Max Misses = %d", maxMisses);
         accuracy = numCorrect / size(data, 1);
+       
     end
 
-    function accuracy = removeElement(data, currentSet, featureToRemove)
+    function accuracy = removeElement(data, currentSet, featureToRemove, bestAccSoFar)
     for i = 2 : size(data, 2)
         if isempty(intersect(currentSet, i-1)) || (i-1) == featureToRemove
                data(:, i) = 0;
         end
     end
     numCorrect = 0;
+        numWrong = 0;
+
     for i = 1 : size(data, 1)
         testObj = data(i, 2:end);
         testLabel = data(i, 1);
@@ -181,11 +206,23 @@ function maxAcc = jkProject2()
         if testLabel == nearestNeighborLabel
             numCorrect = numCorrect + 1;
     
+        else
+            numWrong = numWrong + 1;
+        end
+
+        if(numWrong >= maxMisses)
+            accuracy = bestAccSoFar;
+            fprintf("Abandoning feature test\n")
+            return;
         end
     
+
     end
+      maxMisses = numWrong;
+        fprintf("Max Misses = %d", maxMisses);
         accuracy = numCorrect / size(data, 1);
     end
+
 
 
 end
